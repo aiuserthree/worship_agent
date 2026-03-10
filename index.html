@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>주일 예배 찬양 선곡 에이전트</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      font-family: "Malgun Gothic", "Apple SD Gothic Neo", sans-serif;
+      max-width: 720px;
+      margin: 0 auto;
+      padding: 24px 16px;
+      background: #f8f9fa;
+      color: #1a1a1a;
+      line-height: 1.5;
+    }
+    h1 {
+      font-size: 1.5rem;
+      font-weight: 700;
+      margin: 0 0 8px 0;
+    }
+    .sub {
+      color: #555;
+      font-size: 0.9rem;
+      margin-bottom: 24px;
+    }
+    form {
+      background: #fff;
+      padding: 20px;
+      border-radius: 12px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+      margin-bottom: 24px;
+    }
+    label {
+      display: block;
+      font-weight: 600;
+      margin-bottom: 6px;
+      font-size: 0.9rem;
+    }
+    textarea, input, select {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      font-size: 1rem;
+      font-family: inherit;
+      margin-bottom: 16px;
+    }
+    textarea { min-height: 100px; resize: vertical; }
+    .row { display: flex; gap: 12px; }
+    .row > * { flex: 1; }
+    button {
+      width: 100%;
+      padding: 14px;
+      font-size: 1rem;
+      font-weight: 600;
+      background: #2563eb;
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      margin-top: 8px;
+    }
+    button:hover { background: #1d4ed8; }
+    button:disabled { background: #94a3b8; cursor: not-allowed; }
+    #result { margin-top: 24px; }
+    .section {
+      background: #fff;
+      padding: 20px;
+      border-radius: 12px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+      margin-bottom: 16px;
+    }
+    .section h2 {
+      font-size: 1.1rem;
+      margin: 0 0 12px 0;
+      padding-bottom: 8px;
+      border-bottom: 1px solid #eee;
+    }
+    .content {
+      white-space: pre-wrap;
+      word-break: break-word;
+      font-size: 0.95rem;
+    }
+    .links ul { margin: 0; padding: 0; list-style: none; }
+    .links li { margin-bottom: 8px; }
+    .links a {
+      color: #2563eb;
+      text-decoration: none;
+    }
+    .links a:hover { text-decoration: underline; }
+    .keyword { font-weight: 600; margin-bottom: 6px; }
+    .error { color: #b91c1c; background: #fef2f2; padding: 12px; border-radius: 8px; margin-bottom: 12px; }
+    .loading { color: #64748b; text-align: center; padding: 24px; }
+  </style>
+</head>
+<body>
+  <h1>주일 예배 찬양 선곡 에이전트</h1>
+  <p class="sub">설교 주제와 회중 특성을 입력하면 맞춤형 찬양 5곡과 유튜브 검색 결과를 제공합니다.</p>
+
+  <form id="form">
+    <label for="sermon_topic">이번 주 설교 주제 및 핵심 메시지 (성경 본문 포함)</label>
+    <textarea id="sermon_topic" name="sermon_topic" placeholder="예: 요한복음 3:16, 하나님의 끝없는 사랑과 우리의 결단" required></textarea>
+
+    <div class="row">
+      <div>
+        <label for="age_group">주요 타겟 연령대</label>
+        <select id="age_group" name="age_group">
+          <option value="전 연령 통합">전 연령 통합</option>
+          <option value="10대 (학생부)">10대 (학생부)</option>
+          <option value="2030 (청년부)">2030 (청년부)</option>
+          <option value="4050 (장년층)">4050 (장년층)</option>
+          <option value="60대 이상 (시니어)">60대 이상 (시니어)</option>
+        </select>
+      </div>
+      <div>
+        <label for="leadership_role">주요 타겟 직급/신앙 연륜</label>
+        <select id="leadership_role" name="leadership_role">
+          <option value="직급 무관/초신자 포함">직급 무관/초신자 포함</option>
+          <option value="청년/일반 성도">청년/일반 성도</option>
+          <option value="서리집사 중심">서리집사 중심</option>
+          <option value="안수집사/권사/장로 중심">안수집사/권사/장로 중심</option>
+        </select>
+      </div>
+    </div>
+
+    <label for="atmosphere">원하는 찬양 분위기 (선택)</label>
+    <input type="text" id="atmosphere" name="atmosphere" placeholder="예: 처음엔 신나게, 뒤에는 깊은 기도로" />
+
+    <button type="submit" id="submitBtn">찬양 5곡 추천받기</button>
+  </form>
+
+  <div id="result"></div>
+
+  <script>
+    var form = document.getElementById("form");
+    var resultEl = document.getElementById("result");
+    var submitBtn = document.getElementById("submitBtn");
+
+    form.addEventListener("submit", function (e) {
+      e.preventDefault();
+      resultEl.innerHTML = '<div class="loading">AI가 곡을 선정하고 있습니다...</div>';
+      submitBtn.disabled = true;
+
+      var base = window.location.origin;
+      var apiUrl = base + "/api/recommend";
+      if (window.location.pathname && window.location.pathname !== "/") {
+        apiUrl = base + "/api/recommend";
+      }
+
+      fetch(apiUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          sermon_topic: document.getElementById("sermon_topic").value.trim(),
+          age_group: document.getElementById("age_group").value,
+          leadership_role: document.getElementById("leadership_role").value,
+          atmosphere: document.getElementById("atmosphere").value.trim()
+        })
+      })
+        .then(function (res) {
+          return res.json().then(function (data) {
+            if (!res.ok) throw new Error(data.error || "요청 실패");
+            return data;
+          });
+        })
+        .then(function (data) {
+          if (data.error && !data.content) {
+            resultEl.innerHTML = '<div class="error">' + escapeHtml(data.error) + '</div>';
+            return;
+          }
+          var html = "";
+          if (data.error) {
+            html += '<div class="error">' + escapeHtml(data.error) + '</div>';
+          }
+          html += '<div class="section"><h2>추천 찬양 콘티</h2><div class="content">' + escapeHtml(data.content || "") + '</div></div>';
+          if (data.youtube_links && Object.keys(data.youtube_links).length > 0) {
+            html += '<div class="section"><h2>추천 곡 유튜브 링크 검색 결과</h2>';
+            for (var kw in data.youtube_links) {
+              html += '<div class="keyword">' + escapeHtml(kw) + '</div><ul class="links">';
+              data.youtube_links[kw].forEach(function (l) {
+                html += '<li><a href="' + escapeHtml(l.href) + '" target="_blank" rel="noopener">' + escapeHtml(l.title) + '</a></li>';
+              });
+              html += "</ul>";
+            }
+            html += "</div>";
+          }
+          resultEl.innerHTML = html;
+        })
+        .catch(function (err) {
+          resultEl.innerHTML = '<div class="error">' + escapeHtml(err.message || "오류가 발생했습니다.") + '</div>';
+        })
+        .finally(function () {
+          submitBtn.disabled = false;
+        });
+    });
+
+    function escapeHtml(s) {
+      if (s == null) return "";
+      var d = document.createElement("div");
+      d.textContent = s;
+      return d.innerHTML;
+    }
+  </script>
+</body>
+</html>
