@@ -143,11 +143,11 @@
       resultEl.innerHTML = '<div class="loading">AI가 곡을 선정하고 있습니다...</div>';
       submitBtn.disabled = true;
 
-      var base = window.location.origin;
-      var apiUrl = base + "/api/recommend";
-      if (window.location.pathname && window.location.pathname !== "/") {
-        apiUrl = base + "/api/recommend";
-      }
+      // file:// 로 열었을 때는 배포된 API URL 사용 (로컬에서는 상대 경로가 동작하지 않음)
+      var apiUrl =
+        window.location.protocol === "file:" || !window.location.origin || window.location.origin === "null"
+          ? "https://worship-agent.vercel.app/api/recommend"
+          : window.location.origin + "/api/recommend";
 
       fetch(apiUrl, {
         method: "POST",
