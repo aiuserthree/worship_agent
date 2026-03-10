@@ -16,7 +16,9 @@ def get_recommendation(sermon_topic: str, age_group: str, leadership_role: str, 
     llm = ChatGoogleGenerativeAI(model="gemini-2.5-flash", temperature=0.7)
     prompt_template = """
     당신은 탁월한 영성과 음악성을 갖춘 교회 찬양팀 디렉터입니다.
-    아래의 예배 환경과 설교 주제를 바탕으로 가장 은혜로운 찬양 5곡의 콘티를 기승전결에 맞게 짜주세요.
+    아래의 예배 환경과 설교 주제를 바탕으로 가장 은혜로운 찬양 10곡의 콘티를 기승전결에 맞게 짜주세요.
+
+    [금지] BPM, 템포, 128 BPM, 120 BPM 등 템포 관련 숫자나 표기는 출력에 절대 넣지 마세요. Key(조)만 적으세요.
 
     [예배 환경]
     - 설교 주제/본문: {sermon_topic}
@@ -26,13 +28,11 @@ def get_recommendation(sermon_topic: str, age_group: str, leadership_role: str, 
 
     [선곡 가이드라인]
     1. 주요 연령대와 직급에 익숙하고 은혜받을 수 있는 장르를 적절히 배분하세요.
-    2. **각 곡의 (Key, 템포 BPM)은 반드시 그 곡의 실제 원곡·연주에 맞는 정확한 값만 적으세요.** 추천한 곡이 느린 곡/발라드이면 60~85, 빠른 곡이면 120 전후처럼 곡 성격에 맞는 숫자만 써야 합니다. 느린 곡에 140 같은 빠른 템포를 붙이거나, 곡과 안 맞는 템포로 2번 곡과 억지로 이어 붙이지 마세요.
-    3. 찬양 순서는 기승전결에 맞게, 앞에서 뒤로 갈수록 분위기가 자연스럽게 이어지도록 하세요.
-    4. **1번·2번이 둘 다 빠른 곡일 때만** 같은 키와 비슷한 템포로 이어부르기 좋게 맞추세요. 1번이 느린 곡이면 템포를 올려서 2번과 숫자를 맞추지 말고, 각 곡 실제 템포대로 표기하세요.
-    5. 각 곡마다 '선곡 이유'를 2~3줄로 명확히 적어주세요.
+    2. 찬양의 흐름이 끊기지 않도록 키를 고려하여 순서를 정하세요.
+    3. 각 곡마다 '선곡 이유'를 2~3줄로 명확히 적어주세요.
 
-    [출력 형식]
-    1. 곡 제목 - 아티스트 (Key, 템포 BPM)
+    [출력 형식] (10곡 모두 아래 형식으로. 괄호 안에는 Key만 적고 BPM/템포 숫자 금지.)
+    1. 곡 제목 - 아티스트 (Key)
        - 선곡 이유: ...
        - 검색용 키워드: [유튜브에서 이 곡을 찾기 위한 정확한 한글 검색어]
     """
@@ -58,12 +58,12 @@ def get_recommendation(sermon_topic: str, age_group: str, leadership_role: str, 
         if keywords:
             from ddgs import DDGS
             ddgs = DDGS()
-            for kw in keywords[:5]:
+            for kw in keywords[:10]:
                 kw = kw.strip().strip("]").strip()
                 if len(kw) < 2:
                     continue
                 try:
-                    results = list(ddgs.text(f"{kw} 찬양", max_results=5))
+                    results = list(ddgs.text(f"{kw} 찬양", max_results=8))
                     links = []
                     for r in results:
                         if not isinstance(r, dict):
@@ -71,7 +71,7 @@ def get_recommendation(sermon_topic: str, age_group: str, leadership_role: str, 
                         url = r.get("href") or r.get("link") or ""
                         if "youtube.com/watch" in url or "youtu.be/" in url:
                             links.append({"title": (r.get("title") or url)[:80], "href": url})
-                            if len(links) >= 3:
+                            if len(links) >= 5:
                                 break
                     if links:
                         youtube_links[kw] = links
