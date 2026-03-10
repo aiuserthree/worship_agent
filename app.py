@@ -65,7 +65,9 @@ if submitted:
                 [출력 형식] (10곡 모두 아래 형식으로. 괄호 안에는 Key만 적고 BPM/템포 숫자 금지.)
                 1. 곡 제목 - 아티스트 (Key)
                    - 선곡 이유: ...
-                   - 검색용 키워드: [유튜브에서 이 곡을 찾기 위한 정확한 한글 검색어 (예: 마커스워십 주 은혜임을)]
+                   - 검색용 키워드: [유튜브에서 이 곡을 찾기 위한 정확한 한글 검색어]
+                (2번 곡부터 10번 곡까지도 동일하게 곡 제목 - 아티스트 (Key), 선곡 이유, 검색용 키워드 한 줄씩 반드시 작성.)
+                ※ 10곡 모두 검색용 키워드를 한 곡도 빠짐없이 반드시 작성하세요. 형식: 검색용 키워드: [곡제목 또는 아티스트명 등 한글 검색어]
                 """
                 
                 prompt = PromptTemplate(
@@ -93,16 +95,25 @@ if submitted:
                 st.subheader("추천 곡 유튜브 링크 검색 결과")
 
                 import re
-                # 검색용 키워드 추출 (여러 형식 허용)
-                keywords = re.findall(r'검색용 키워드:\s*\[?(.*?)\]', ai_response, re.DOTALL)
-                if not keywords:
-                    keywords = re.findall(r'검색용 키워드:\s*([^\n\[\]-]+)', ai_response)
-                # 그래도 없으면 "1. 곡제목 - 아티스트" 형태에서 곡제목 추출
-                if not keywords:
-                    for m in re.finditer(r'\d+\.\s*([^-]+?)\s*-\s*[^(]+(?:\([^)]*\))?', ai_response):
+                # 검색용 키워드 추출: '검색용 키워드:' 나올 때마다 그 다음 [ ] 또는 한 줄에서 키워드 추출 (10곡 모두 나오도록)
+                keywords = []
+                for part in ai_response.split("검색용 키워드:")[1:]:
+                    part = part.strip()
+                    m = re.search(r"\[([^\]]+)\]", part)
+                    if m:
+                        kw = m.group(1).strip()
+                    else:
+                        first_line = part.split("\n")[0].strip().strip("[]")
+                        kw = first_line if len(first_line) >= 2 else ""
+                    if kw and len(kw) >= 2:
+                        keywords.append(kw)
+                if len(keywords) < 10:
+                    for m in re.finditer(r"\d+\.\s*([^-]+?)\s*-\s*[^(]+(?:\([^)]*\))?", ai_response):
                         title = m.group(1).strip()
-                        if len(title) >= 2 and "선곡 이유" not in title and "Key" not in title:
+                        if len(title) >= 2 and "선곡 이유" not in title and "Key" not in title and title not in keywords:
                             keywords.append(title)
+                            if len(keywords) >= 10:
+                                break
 
                 if not keywords:
                     st.info("AI 응답에서 검색할 곡 정보를 찾지 못했습니다. 위 추천 콘티에 '검색용 키워드:' 형식이 포함되어 있는지 확인해 주세요.")

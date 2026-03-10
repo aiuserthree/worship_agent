@@ -35,6 +35,8 @@ def get_recommendation(sermon_topic: str, age_group: str, leadership_role: str, 
     1. 곡 제목 - 아티스트 (Key)
        - 선곡 이유: ...
        - 검색용 키워드: [유튜브에서 이 곡을 찾기 위한 정확한 한글 검색어]
+    (2번 곡부터 10번 곡까지도 동일하게 곡 제목 - 아티스트 (Key), 선곡 이유, 검색용 키워드 한 줄씩 반드시 작성.)
+    ※ 10곡 모두 검색용 키워드를 한 곡도 빠짐없이 반드시 작성하세요. 형식: 검색용 키워드: [곡제목 또는 아티스트명 등 한글 검색어]
     """
     prompt = PromptTemplate(
         input_variables=["sermon_topic", "age_group", "leadership_role", "atmosphere"],
@@ -49,16 +51,31 @@ def get_recommendation(sermon_topic: str, age_group: str, leadership_role: str, 
     })
     ai_response = result.content
 
-    # 키워드 추출 후 유튜브 링크 검색 (타임아웃 가능성 있음)
+    # 키워드 추출: '검색용 키워드:' 나올 때마다 그 다음 [ ] 또는 한 줄에서 키워드 추출 (10곡 모두)
     youtube_links = {}
     try:
-        keywords = re.findall(r"검색용 키워드:\s*\[?(.*?)\]", ai_response, re.DOTALL)
-        if not keywords:
-            keywords = re.findall(r"검색용 키워드:\s*([^\n\[\]-]+)", ai_response)
+        keywords = []
+        for part in ai_response.split("검색용 키워드:")[1:]:
+            part = part.strip()
+            m = re.search(r"\[([^\]]+)\]", part)
+            if m:
+                kw = m.group(1).strip()
+            else:
+                first_line = part.split("\n")[0].strip().strip("[]")
+                kw = first_line if len(first_line) >= 2 else ""
+            if kw and len(kw) >= 2:
+                keywords.append(kw)
+        if len(keywords) < 10:
+            for m in re.finditer(r"\d+\.\s*([^-]+?)\s*-\s*[^(]+(?:\([^)]*\))?", ai_response):
+                title = m.group(1).strip()
+                if len(title) >= 2 and "선곡 이유" not in title and "Key" not in title and title not in keywords:
+                    keywords.append(title)
+                    if len(keywords) >= 10:
+                        break
         if keywords:
             from ddgs import DDGS
             ddgs = DDGS()
-            for kw in keywords[:10]:
+            for kw in keywords:
                 kw = kw.strip().strip("]").strip()
                 if len(kw) < 2:
                     continue
